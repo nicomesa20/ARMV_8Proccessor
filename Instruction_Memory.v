@@ -28,9 +28,9 @@ module Instruction_Memory(
     reg  [7:0] r_insMem [MEM_SIZE-1:0];
 
     initial begin
-		$readmemh  (inicial, r_insMem);
+		$readmemb  (inicial, r_insMem);
 	end
 
-    assign o_ins = (i_add<MEM_SIZE)?({{r_insMem[i_add+3],r_insMem[i_add+2]},{r_insMem[i_add+1],r_insMem[i_add]}}):0;
+    assign o_ins = (i_add<MEM_SIZE)?({{r_insMem[i_add],r_insMem[i_add+1]},{r_insMem[i_add+2],r_insMem[i_add+3]}}):0;
 
 endmodule

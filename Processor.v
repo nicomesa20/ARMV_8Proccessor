@@ -24,8 +24,6 @@ module Processor(
     );
 
     // PC 
-        wire signed [63:0] w_res_sumPri; // Respuesta sumador principal
-        wire [63:0] w_res_sumBase; // Respuesta sumador + 4
         // wires
             // Entradas
                 wire [63:0] w_PCSrc_PC; // Direccion PC (i_counter)
@@ -33,7 +31,11 @@ module Processor(
                 wire [63:0] w_PC_IM; // Direccion PC (o_ins)
         
             
-    
+    // Sumador Base
+        wire [63:0] w_res_sumBase; // Respuesta sumador + 4
+
+    // Sumador Primario
+        wire [63:0] w_res_sumPri; // Respuesta sumador principal    
 
     // Instruction Memory wires
         // Entradas
@@ -45,7 +47,7 @@ module Processor(
         // Wires 
             // Entradas
                 wire [10:0] w_IM_CU; // Opcode CU (i_opCode)
-                // wire        w_ALU_CU; // Flag ZERO (i_ZERO)
+                // wire        w_ALU_CU; // Flag ZERO (i_Z)
             // Salidas
                 wire        w_reg2Sel_MUX_RF; // Selector MUX RF (o_reg2Sel)
                 wire        w_rfWr_RF; // Escritura RF (o_rfWr)
@@ -54,7 +56,7 @@ module Processor(
                 wire [3:0]  w_ALUOp_ALU; // Operacion ALU (o_ALUOp)
                 wire        w_memWr; // Habilitador escritura DM (o_memWr)
                 wire        w_memRd; // Habilitador lectura DM (o_memRd)
-                wire        w_PCSrc; // Selector MUX Sumadores (o_PCSrc)
+                wire [1:0]  w_PCSrc; // Selector MUX Sumadores (o_PCSrc)
                 wire        w_wrDataSel;// Selector MUX WrDataSel (o_wrDataSel)
         
 
@@ -84,7 +86,8 @@ module Processor(
                 // wire [5:0] w_IM_ALU_shamt; // Corrimiento (i_shamt)
             // Salidas
                 wire [63:0] w_ALU_ALURes; // Resultado ALU Direccion_DM|MUX_WrDataSel (o_ALURes)
-                wire        w_ALU_ZERO;   // Flag 0 a CU (o_ZERO)
+                wire        w_ALU_Z;   // Flag 0 a CU (o_Z)
+                wire        w_ALU_N;   // Flag 0 a CU (o_Z)
         
 
     // Data Memory
@@ -95,12 +98,8 @@ module Processor(
 
 
     // Program Counter
-        // Sumador Pri
-            assign w_res_sumPri  = w_PC_IM + w_SEU_ext;
-        // Sumador Base
-            assign w_res_sumBase = w_PC_IM + 4;
         // Conexiones
-            assign w_PCSrc_PC = !(w_PCSrc)?w_res_sumBase:w_res_sumPri; // MUX Sumador
+            assign w_PCSrc_PC = (w_PCSrc == 0)?w_res_sumBase:(w_PCSrc == 1? w_res_sumPri:w_RF_reg1); // MUX Sumador
 
     // Control Unit
         // Conexiones
@@ -120,6 +119,17 @@ module Processor(
         // Conexiones
             assign w_MUX_ALU_ALU_b = !(w_ALUSrcB_MUX_ALU)?w_RF_reg1:w_SEU_ext; // MUX ALU
 
+    Adder_Base adder_base(
+        .i_a(w_PC_IM),
+        .o_res(w_res_sumBase)
+    );
+
+    Adder_Pri adder_pri(
+        .i_a(w_PC_IM),
+        .i_b(w_SEU_ext),
+        .o_res(w_res_sumPri)
+    );
+
     Program_Counter program_counter_0(
         .i_clk(t_clk),
         .i_counter(w_PCSrc_PC),
@@ -132,8 +142,11 @@ module Processor(
     );
 
     Control_Unit control_unit_0(
+        .i_clk(t_clk),
         .i_opCode(w_IM_CU),
-        .i_ZERO(w_ALU_ZERO),
+        .i_bCond(w_IM_ins[3:0]),
+        .i_Z(w_ALU_Z),
+        .i_N(w_ALU_N),
         .o_reg2Sel(w_reg2Sel_MUX_RF),
         .o_rfWr(w_rfWr_RF),
         .o_SEU(w_SEU_SEU),
@@ -168,7 +181,8 @@ module Processor(
         .i_ALUOp(w_ALUOp_ALU),
         .i_shamt(w_IM_ins[15:10]),
         .o_ALURes(w_ALU_ALURes),
-        .o_ZERO(w_ALU_ZERO)
+        .o_Z(w_ALU_Z),
+        .o_N(w_ALU_N)
     );
 
     Data_Memory data_memory_0(

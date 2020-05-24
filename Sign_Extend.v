@@ -19,7 +19,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module Sign_Extend(
-    input [25:0] i_inm,
+    input signed [25:0] i_inm,
     input [1:0] i_SEU,
     output reg signed [63:0] o_ext
     );
