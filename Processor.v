@@ -50,6 +50,7 @@ module Processor(
                 // wire        w_ALU_CU; // Flag ZERO (i_Z)
             // Salidas
                 wire        w_reg2Sel_MUX_RF; // Selector MUX RF (o_reg2Sel)
+                wire        w_regWrSrc_MUX_RF;
                 wire        w_rfWr_RF; // Escritura RF (o_rfWr)
                 wire [1:0]  w_SEU_SEU; // Extension de signo SEU (o_SEU)
                 wire        w_ALUSrcB_MUX_ALU; // Selector MUX ALU (o_ALUSrcB)
@@ -57,7 +58,7 @@ module Processor(
                 wire        w_memWr; // Habilitador escritura DM (o_memWr)
                 wire        w_memRd; // Habilitador lectura DM (o_memRd)
                 wire [1:0]  w_PCSrc; // Selector MUX Sumadores (o_PCSrc)
-                wire        w_wrDataSel;// Selector MUX WrDataSel (o_wrDataSel)
+                wire [1:0]  w_wrDataSel;// Selector MUX WrDataSel (o_wrDataSel)
         
 
     // Register File
@@ -66,6 +67,7 @@ module Processor(
                 wire [4:0]  w_IM_RF_rdReg1; // Operando Rn (i_rdReg1)
                 wire [4:0]  w_IM_RF_rdReg2; // MUX RF Operando Rm|Rt (i_rdReg2)
                 wire [63:0] w_MUX_wrDataSel_RF_wrData; // Dato de escritura (i_wrData)
+                wire [4:0] w_MUX_regWrSrc;
             // Salidas
                 wire [63:0] w_RF_ALU_reg0; // Dato de salida a ALU (o_reg0)
                 wire [63:0] w_RF_reg1; // Dato de salida a DM|MUX ALU (o_reg1)
@@ -109,7 +111,8 @@ module Processor(
         // Conexiones
             assign w_IM_RF_rdReg1 = w_IM_ins[9:5];
             assign w_IM_RF_rdReg2 = !(w_reg2Sel_MUX_RF)?w_IM_ins[20:16]:w_IM_ins[4:0];// MUX RF
-            assign w_MUX_wrDataSel_RF_wrData = !(w_wrDataSel)?w_DM_MUX_wrDataSel_dataRd:w_ALU_ALURes; // MUX WrData de RF
+            assign w_MUX_wrDataSel_RF_wrData = (w_wrDataSel == 0)?w_DM_MUX_wrDataSel_dataRd:(w_wrDataSel == 1? w_ALU_ALURes:w_res_sumBase); // MUX WrData de RF
+            assign w_MUX_regWrSrc = !(w_regWrSrc_MUX_RF)?w_IM_ins[4:0]:30;
 
 	// Sign Extend
         // Conexiones
@@ -148,6 +151,7 @@ module Processor(
         .i_Z(w_ALU_Z),
         .i_N(w_ALU_N),
         .o_reg2Sel(w_reg2Sel_MUX_RF),
+        .o_regWrSrc(w_regWrSrc_MUX_RF),
         .o_rfWr(w_rfWr_RF),
         .o_SEU(w_SEU_SEU),
         .o_ALUSrcB(w_ALUSrcB_MUX_ALU),
@@ -164,7 +168,7 @@ module Processor(
         .i_rdReg2(w_IM_RF_rdReg2),
         .o_reg0(w_RF_ALU_reg0),
         .o_reg1(w_RF_reg1),
-        .i_wrReg(w_IM_ins[4:0]),
+        .i_wrReg(w_MUX_regWrSrc),
         .i_dataWr(w_MUX_wrDataSel_RF_wrData),
         .i_regWr(w_rfWr_RF)
     );
