@@ -21,3 +21,6 @@
 *.sim
 *.exe
 *.log
+*.sdb
+*.ini
+*_info
